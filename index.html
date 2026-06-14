@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kru_alien | Hypercar Dashboard</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #000000; /* Mền đen gốc làm nền chuẩn */
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #f4f4f9;
+            overflow: hidden;
+        }
+
+        /* ==================== HỆ THỐNG NỀN BACKGROUND LOGIC ==================== */
+        .bg-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: -1;
+            /* Hiệu ứng mờ dần mượt mà chuyển động trong 1 giây */
+            transition: opacity 1s cubic-bezier(0.25, 0.46, 0.45, 0.94); 
+            opacity: 0;
+        }
+
+        /* Khi kích hoạt class active, nền sẽ hiện lên mượt mà */
+        .bg-layer.active {
+            opacity: 1;
+        }
+
+        /* Lớp phủ tối đè lên GIF để chữ không bị lóa và dễ đọc hơn */
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 0;
+        }
+
+        /* ==================== CONTAINER GIAO DIỆN CHÍNH ==================== */
+        .app-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 440px;
+            padding: 20px;
+            height: 560px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10; /* Đảm bảo nằm trên lớp nền */
+        }
+
+        /* MÀN HÌNH CHÀO (WELCOME) */
+        .welcome-stage {
+            position: absolute;
+            width: calc(100% - 40px);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 12;
+            transition: all 0.8s cubic-bezier(0.76, 0, 0.24, 1);
+        }
+
+        .welcome-stage.hide {
+            opacity: 0;
+            transform: scale(0.9) translateY(-40px);
+            pointer-events: none;
+        }
+
+        .w-title {
+            font-size: 34px;
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #ffffff 30%, #a1a1aa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .w-sub {
+            color: #a1a1aa;
+            font-size: 14px;
+            margin-bottom: 40px;
+            max-width: 280px;
+            line-height: 1.5;
+        }
+
+        .launch-btn {
+            background: #ffffff;
+            color: #0b0b0f;
+            border: none;
+            padding: 16px 36px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.15);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .launch-btn:hover {
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: 0 15px 35px rgba(255, 255, 255, 0.3);
+        }
+
+        /* GUI DASHBOARD SCREEN */
+        .dashboard-stage {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            opacity: 0;
+            transform: translateY(40px) scale(0.96);
+            pointer-events: none;
+            transition: all 0.8s cubic-bezier(0.76, 0, 0.24, 1);
+        }
+
+        .dashboard-stage.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        /* Thẻ kính mờ */
+        .gui-panel {
+            background: rgba(10, 10, 12, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 24px;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .gui-panel:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: translateY(-3px);
+            background: rgba(15, 15, 20, 0.6);
+        }
+
+        .header-card { display: flex; align-items: center; gap: 18px; }
+        
+        .avatar-container {
+            width: 68px;
+            height: 68px;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-info { display: flex; flex-direction: column; gap: 3px; }
+        .title-name { font-size: 22px; font-weight: 700; color: #fff; }
+        .title-sub { font-size: 13px; color: #a1a1aa; }
+
+        .info-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .info-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #3b82f6;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .info-row:last-child { border: none; }
+
+        .row-title { font-size: 14px; color: #71717a; }
+        .row-value { 
+            font-size: 14px; 
+            font-weight: 600; 
+            font-family: 'JetBrains Mono', monospace; 
+            color: #e4e4e7;
+        }
+        .active-ip { color: #ff3344; text-shadow: 0 0 12px rgba(255, 51, 68, 0.4); }
+
+        .footer-card { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; }
+        .status-badge { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #10b981; font-weight: 600; }
+        .pulse-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 10px #10b981; }
+    </style>
+</head>
+<body>
+
+    <img id="bg1" class="bg-layer active" src="https://media.tenor.com/WrBqLccFsyQAAAAM/koenigsegg-chimera-hypercar.gif" alt="Koenigsegg Chimera">
+    <img id="bg2" class="bg-layer" src="https://media.tenor.com/7vmhcT8RVhwAAAAM/jesko-jesko-absolut.gif" alt="Jesko Absolut">
+    
+    <div class="bg-overlay"></div>
+
+    <div class="app-wrapper">
+        
+        <div class="welcome-stage" id="welcomeStage">
+            <h1 class="w-title">System Entry</h1>
+            <p class="w-sub">Click the button below to initialize the secure graphical interface.</p>
+            <button class="launch-btn" id="launchBtn">Open Dashboard</button>
+        </div>
+
+        <div class="dashboard-stage" id="dashboardStage">
+            
+            <div class="gui-panel header-card">
+                <div class="avatar-container">
+                    <img src="https://assets.discordapp.com/icons/643716259012411402/a_e6ba7e6fa56dcd696b9991b1567a505b.gif" alt="Avatar" class="avatar-img">
+                </div>
+                <div class="profile-info">
+                    <h2 class="title-name">Smol</h2>
+                    <p class="title-sub">Full-stacks Developer</p>
+                </div>
+            </div>
+
+            <div class="gui-panel info-card">
+                <span class="info-label">Your Info</span>
+                <div class="info-row">
+                    <span class="row-title">Device</span>
+                    <span class="row-value" id="deviceInfo">Detecting...</span>
+                </div>
+                <div class="info-row">
+                    <span class="row-title">IP Address</span>
+                    <span class="row-value active-ip" id="ipInfo">Fetching...</span>
+                </div>
+                <div class="info-row">
+                    <span class="row-title">Your Location</span>
+                    <span class="row-value" id="locationInfo">Locating...</span>
+                </div>
+            </div>
+
+            <div class="gui-panel footer-card">
+                <span class="row-title" style="font-size: 13px;">Secure Connection</span>
+                <div class="status-badge">
+                    <div class="pulse-dot"></div>
+                    <span>Active</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 1. TIMING LOGIC CHUYỂN ĐỔI NỀN GIF MƯỢT MÀ
+        const bg1 = document.getElementById('bg1');
+        const bg2 = document.getElementById('bg2');
+
+        // Hàm đếm thời gian quản lý luồng ảnh
+        function startBackgroundPipeline() {
+            // Bước A: Chạy hết GIF 1 (3.1 giây) -> Mờ dần sang màn đen
+            setTimeout(() => {
+                bg1.classList.remove('active'); // CSS mất 1s để mờ hoàn toàn về đen
+            }, 3100);
+
+            // Bước B: Nằm ở màn đen tầm 1 giây (Tổng cộng 3.1s + 1s = 4.1 giây) -> Kích hoạt GIF 2 hiện lên
+            setTimeout(() => {
+                bg2.classList.add('active');
+            }, 4100);
+        }
+        
+        // Kích hoạt chuỗi logic nền ngay khi web tải xong
+        startBackgroundPipeline();
+
+
+        // 2. NHẬN DIỆN THIẾT BỊ CAO CẤP (CLIENT HINTS & USER AGENT)
+        async function detectDevice() {
+            const userAgent = window.navigator.userAgent;
+            if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+                try {
+                    const hints = await navigator.userAgentData.getHighEntropyValues(['platformVersion']);
+                    if (navigator.userAgentData.platform === "Windows") {
+                        const majorVersion = parseInt(hints.platformVersion.split('.')[0]);
+                        if (majorVersion >= 13) return 'Windows 11 PC'; 
+                        return 'Windows 10 PC';
+                    }
+                } catch (e) {}
+            }
+            if (/iPhone|iPad|iPod/i.test(userAgent)) return 'Apple iOS Device';
+            if (/Android/i.test(userAgent)) return 'Android Mobile';
+            if (/Mac/i.test(window.navigator.platform)) return 'macOS Workstation';
+            if (/Linux/i.test(window.navigator.platform)) return 'Linux System';
+            if (/Win/i.test(window.navigator.platform)) return 'Windows PC';
+            return 'Generic Web Client';
+        }
+
+        // 3. TỰ ĐỘNG TRA ĐỊA CHỈ NHÀ QUA IP
+        async function getNetworkAnalytics() {
+            try {
+                const response = await fetch('https://ipapi.co/json/');
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('ipInfo').innerText = data.ip || '0.0.0.0';
+                    const city = data.city || '';
+                    const region = data.region || '';
+                    const country = data.country_name || '';
+                    
+                    if (city || region) {
+                        document.getElementById('locationInfo').innerText = `${city}, ${region} (${country})`;
+                    } else {
+                        document.getElementById('locationInfo').innerText = country || 'Global System';
+                    }
+                }
+            } catch (error) {
+                document.getElementById('ipInfo').innerText = '113.191.105.91';
+                document.getElementById('locationInfo').innerText = 'Hanoi, Viet Nam';
+            }
+            document.getElementById('deviceInfo').innerText = await detectDevice();
+        }
+        getNetworkAnalytics();
+
+        // 4. CHUYỂN CẢNH KHI BẤM NÚT LAUNCH
+        const launchBtn = document.getElementById('launchBtn');
+        const welcomeStage = document.getElementById('welcomeStage');
+        const dashboardStage = document.getElementById('dashboardStage');
+
+        launchBtn.addEventListener('click', () => {
+            welcomeStage.classList.add('hide');
+            setTimeout(() => {
+                welcomeStage.style.display = 'none';
+                dashboardStage.classList.add('show');
+            }, 350);
+        });
+    </script>
+</body>
+</html>
