@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kru_alien | Premium Hypercar GUI</title>
+    <title>smol | Premium Hypercar GUI</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
@@ -24,7 +24,7 @@
             overflow: hidden;
         }
 
-        /* ==================== HỆ THỐNG BACKGROUND LAYER (1 GIF DUY NHẤT) ==================== */
+        /* ==================== HỆ THỐNG BACKGROUND LAYER (ANTI-FRAME LAG) ==================== */
         .bg-layer {
             position: fixed;
             top: 0;
@@ -33,10 +33,15 @@
             height: 100vh;
             object-fit: cover;
             z-index: -2;
-            opacity: 1; /* Giữ hiển thị cố định mượt mà */
+            opacity: 0; /* Mặc định ẩn đi, chờ JS kích hoạt để mượt nhất */
+            transition: opacity 0.8s ease-in-out;
         }
 
-        /* Lớp phủ tối đè lên GIF để giữ độ tương phản cao cho chữ */
+        .bg-layer.ready {
+            opacity: 1;
+        }
+
+        /* Lớp phủ tối đè lên GIF */
         .bg-overlay {
             position: fixed;
             top: 0;
@@ -234,7 +239,7 @@
 </head>
 <body>
 
-    <img id="bg" class="bg-layer" src="https://media.tenor.com/7vmhcT8RVhwAAAAM/jesko-jesko-absolut.gif" alt="Jesko Absolut Background">
+    <img id="bg" class="bg-layer" alt="Jesko Absolut Background">
     <div class="bg-overlay"></div>
 
     <div class="app-wrapper">
@@ -252,7 +257,7 @@
                     <img src="https://assets.discordapp.com/icons/643716259012411402/a_e6ba7e6fa56dcd696b9991b1567a505b.gif" alt="Avatar" class="avatar-img">
                 </div>
                 <div class="profile-info">
-                    <h2 class="title-name">Smol</h2>
+                    <h2 class="title-name">smol</h2>
                     <p class="title-sub">Full-stacks Developer</p>
                 </div>
             </div>
@@ -288,7 +293,19 @@
     </div>
 
     <script>
-        // 1. NHẬN DIỆN THIẾT BỊ CAO CẤP (AN TOÀN TRÊN HTTPS/LOCALHOST)
+        // 1. ENGINE FORCE-RENDER: Ép GIF phải load sạch từ giây 0 sau khi cấu trúc web đã sẵn sàng
+        window.addEventListener('load', () => {
+            const bgImg = document.getElementById('bg');
+            const rawGifUrl = "https://media.tenor.com/7vmhcT8RVhwAAAAM/jesko-jesko-absolut.gif";
+            
+            // Đóng dấu thời gian thực chống dùng lại timeline lưu trong cache trình duyệt
+            bgImg.src = rawGifUrl + "?antiFlag=" + new Date().getTime();
+            
+            // Kích hoạt class hiển thị mượt mà
+            bgImg.classList.add('ready');
+        });
+
+        // 2. NHẬN DIỆN THIẾT BỊ CAO CẤP (AN TOÀN TRÊN HTTPS/LOCALHOST)
         async function detectDevice() {
             const userAgent = window.navigator.userAgent;
             if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
@@ -309,7 +326,7 @@
             return 'Generic Web Client';
         }
 
-        // 2. TỰ ĐỘNG THU THẬP VÀ TRA CỨU ĐỊA CHỈ NHÀ QUA IP PUBLIC
+        // 3. TỰ ĐỘNG THU THẬP VÀ TRA CỨU ĐỊA CHỈ NHÀ QUA IP PUBLIC
         async function getNetworkAnalytics() {
             try {
                 const response = await fetch('https://ipapi.co/json/');
@@ -337,7 +354,7 @@
         }
         getNetworkAnalytics();
 
-        // 3. ENGINE CHUYỂN CẢNH MÀN HÌNH DASHBOARD MƯỢT MÀ
+        // 4. ENGINE CHUYỂN CẢNH MÀN HÌNH DASHBOARD MƯỢT MÀ
         const launchBtn = document.getElementById('launchBtn');
         const welcomeStage = document.getElementById('welcomeStage');
         const dashboardStage = document.getElementById('dashboardStage');
